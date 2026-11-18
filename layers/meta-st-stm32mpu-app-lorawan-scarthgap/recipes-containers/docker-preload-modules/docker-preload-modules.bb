@@ -7,17 +7,9 @@ SRC_URI = " \
     file://docker-preload.service \
 "
 
-# --- AUTO GENERATED MODULES START ---
-SRC_URI += "file://azureiotedge-agent_1.5.tar;unpack=false"
-SRC_URI += "file://azureiotedge-hub_1.5.tar;unpack=false"
-SRC_URI += "file://basicstation_0.0.2-arm32v7.tar;unpack=false"
-SRC_URI += "file://chirpstack-gateway-bridge_4.0.6.tar;unpack=false"
-SRC_URI += "file://configmodule_0.0.2-arm32v7.tar;unpack=false"
-SRC_URI += "file://edge-health-monitor_0.0.2-arm32v7.tar;unpack=false"
-SRC_URI += "file://loggingmodule_0.0.2-arm32v7.tar;unpack=false"
-SRC_URI += "file://managementmodule_0.0.2-arm32v7.tar;unpack=false"
-SRC_URI += "file://networkmodule_0.0.2-arm32v7.tar;unpack=false"
-# --- AUTO GENERATED MODULES END ---
+# Optional: Add any pre-saved Docker image tarballs placed in files/ here:
+# SRC_URI += "file://my-image.tar;unpack=false"
+
 
 # ----------------------------------------------------------------------
 

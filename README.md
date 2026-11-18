@@ -47,6 +47,10 @@ cache/
 - ~200 GB free disk space (first build)
 - 8+ CPU cores and 16 GB RAM recommended
 
+> [!TIP]
+> **Building on Windows via WSL2?**
+> See the dedicated [WSL2 Setup Guide](file:///home/lenovo/visionsom-yocto-docker/WSL_SETUP.md) for step-by-step instructions, `.wslconfig` memory tuning, filesystem requirements, and flashing.
+
 ---
 
 ## Quick Start

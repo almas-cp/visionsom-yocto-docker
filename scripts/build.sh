@@ -114,7 +114,7 @@ patch_conf "CFLAGS:remove:arm"     'CFLAGS:remove:arm = "-D_TIME_BITS=64"'
 # Enable virtualization distro feature: required by meta-iotedge (LAYERDEPENDS).
 # NOTE: moby-engine is NOT added to IMAGE_INSTALL — it only supports 64-bit
 # hosts (x86_64, aarch64). STM32MP157 is 32-bit Cortex-A7 (armhf).
-patch_conf "DISTRO_FEATURES:append" 'DISTRO_FEATURES:append = " virtualization seccomp"'
+patch_conf "DISTRO_FEATURES:append" 'DISTRO_FEATURES:append = " virtualization seccomp security tpm tpm2"'
 # Strip display/graphics (wayland, x11, opengl, vulkan) and sound/audio (alsa, pulseaudio)
 patch_conf "DISTRO_FEATURES:remove" 'DISTRO_FEATURES:remove = " wayland x11 opengl vulkan directfb alsa pulseaudio sound"'
 patch_conf "MACHINE_FEATURES:remove" 'MACHINE_FEATURES:remove = " splashscreen gpu alsa"'

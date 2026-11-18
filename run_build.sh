@@ -20,6 +20,21 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
+# Load .env if present
+if [ -f "${SCRIPT_DIR}/.env" ]; then
+    set -a
+    source "${SCRIPT_DIR}/.env"
+    set +a
+fi
+
+# Ensure workspace and cache directories exist on host with current user permissions
+# (prevents Docker from auto-creating them as root:root)
+RESOLVED_WORKSPACE="${YOCTO_WORKSPACE:-${SCRIPT_DIR}/workspace}"
+RESOLVED_SSTATE="${SSTATE_CACHE:-${SCRIPT_DIR}/cache/sstate}"
+RESOLVED_DL="${DL_DIR:-${SCRIPT_DIR}/cache/downloads}"
+
+mkdir -p "${RESOLVED_WORKSPACE}" "${RESOLVED_SSTATE}" "${RESOLVED_DL}"
+
 # 2. Build Docker container environment
 echo "[1/4] Building Yocto Docker container image..."
 docker compose build
@@ -30,7 +45,7 @@ docker compose run --rm yocto-build /home/yocto/scripts/init.sh
 
 # 4. Synchronize local custom layer into Yocto workspace
 echo "[3/4] Synchronizing custom meta-layer into workspace..."
-TARGET_LAYER_DIR="${SCRIPT_DIR}/../../yocto/workspace/st-yocto/layers/meta-st/meta-st-stm32mpu-app-lorawan"
+TARGET_LAYER_DIR="${RESOLVED_WORKSPACE}/st-yocto/layers/meta-st/meta-st-stm32mpu-app-lorawan"
 if [ -d "${TARGET_LAYER_DIR}" ]; then
     rsync -av --delete "${SCRIPT_DIR}/layers/meta-st-stm32mpu-app-lorawan-scarthgap/" "${TARGET_LAYER_DIR}/"
 fi

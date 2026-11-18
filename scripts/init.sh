@@ -69,6 +69,18 @@ else
     git -C "${IOTEDGE_DIR}" pull --ff-only
 fi
 
+# ── 4.5. Clone meta-virtualization layer (required by meta-iotedge) ───────────
+VIRT_DIR="${LAYERS_DIR}/meta-virtualization"
+if [ ! -d "${VIRT_DIR}" ]; then
+    echo "[5.2/6] Cloning meta-virtualization (scarthgap)..."
+    git clone -b scarthgap \
+        https://git.yoctoproject.org/meta-virtualization \
+        "${VIRT_DIR}"
+else
+    echo "[5.2/6] meta-virtualization already present, pulling..."
+    git -C "${VIRT_DIR}" pull --ff-only
+fi
+
 # ── 5. Clone meta-security layer (for tpm2-tss dependency) ───────────────────
 SECURITY_DIR="${LAYERS_DIR}/meta-security"
 if [ ! -d "${SECURITY_DIR}" ]; then
