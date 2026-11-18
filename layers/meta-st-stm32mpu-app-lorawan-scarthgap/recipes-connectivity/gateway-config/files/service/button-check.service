@@ -1,0 +1,20 @@
+[Unit]
+Description=Button Check and BLE Setup Service
+After=network.target bluetooth.service
+Wants=bluetooth.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStartPre=-/usr/sbin/rfkill unblock bluetooth
+ExecStartPre=-/usr/sbin/hciconfig hci0 up
+ExecStart=/bin/sh /usr/share/gateway_conf/button-check.sh
+Restart=always
+RestartSec=2
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

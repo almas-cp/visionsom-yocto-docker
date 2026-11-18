@@ -1,0 +1,87 @@
+#!/bin/sh
+# /usr/bin/setup_openvpn
+# Configure OpenVPN client for this gateway and connect to the VPN server
+# Usage: setup_openvpn [gateway_name] [server_ip]
+# Example: setup_openvpn gateway3
+
+set -e
+
+GATEWAY_NAME="$1"
+
+# If gateway name is not specified, attempt to infer from azure_device_id or hostname
+if [ -z "$GATEWAY_NAME" ]; then
+    if [ -f "/etc/gateway/azure_device_id" ]; then
+        GATEWAY_NAME=$(cat /etc/gateway/azure_device_id 2>/dev/null | tr -d '[:space:]')
+    fi
+fi
+
+if [ -z "$GATEWAY_NAME" ] || [ "$GATEWAY_NAME" = "admin" ] || [ "$GATEWAY_NAME" = "NOT FOUND" ]; then
+    CURRENT_HN=$(hostname 2>/dev/null | tr -d '[:space:]')
+    if [ -n "$CURRENT_HN" ] && [ "$CURRENT_HN" != "admin" ] && [ "$CURRENT_HN" != "mp157"* ]; then
+        GATEWAY_NAME="$CURRENT_HN"
+    fi
+fi
+
+if [ -z "$GATEWAY_NAME" ] || [ "$GATEWAY_NAME" = "admin" ]; then
+    echo "ERROR: Gateway name not provided and no configured azure_device_id found." >&2
+    echo "Usage: setup_openvpn <gateway_name> [server_ip]" >&2
+    echo "Example: setup_openvpn gateway3" >&2
+    exit 1
+fi
+
+SERVER_IP="${2:-68.218.52.15}"
+SERVER_PORT="${SERVER_PORT:-1194}"
+SSH_USER="${SSH_USER:-abhithlal}"
+
+echo "============================================================"
+echo " Setting up OpenVPN Client for '${GATEWAY_NAME}'"
+echo " Server: ${SERVER_IP}:${SERVER_PORT}"
+echo "============================================================"
+
+CLIENT_DIR="/etc/openvpn/client"
+mkdir -p "$CLIENT_DIR"
+cd "$CLIENT_DIR"
+
+echo "Downloading certificates from CA server (${SSH_USER}@${SERVER_IP})..."
+echo "(SSH password for ${SSH_USER} will be requested once)"
+
+ssh "${SSH_USER}@${SERVER_IP}" "mkdir -p /tmp/ovpn_${GATEWAY_NAME} && \
+cp ~/openvpn-ca/pki/ca.crt /tmp/ovpn_${GATEWAY_NAME}/ && \
+cp ~/openvpn-ca/pki/issued/${GATEWAY_NAME}.crt /tmp/ovpn_${GATEWAY_NAME}/ && \
+cp ~/openvpn-ca/pki/private/${GATEWAY_NAME}.key /tmp/ovpn_${GATEWAY_NAME}/ && \
+cp ~/openvpn-ca/ta.key /tmp/ovpn_${GATEWAY_NAME}/ && \
+tar -cf - -C /tmp/ovpn_${GATEWAY_NAME} . && \
+rm -rf /tmp/ovpn_${GATEWAY_NAME}" | tar -xf -
+
+# Harden private key permissions
+chmod 0600 "${CLIENT_DIR}/${GATEWAY_NAME}.key" 2>/dev/null || true
+chmod 0600 "${CLIENT_DIR}/ta.key" 2>/dev/null || true
+
+echo "Generating client configuration file: ${CLIENT_DIR}/${GATEWAY_NAME}.conf..."
+cat > "${CLIENT_DIR}/${GATEWAY_NAME}.conf" << EOF
+client
+dev tun
+proto udp
+remote ${SERVER_IP} ${SERVER_PORT}
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+cipher AES-256-GCM
+auth SHA256
+ca ca.crt
+cert ${GATEWAY_NAME}.crt
+key ${GATEWAY_NAME}.key
+tls-auth ta.key 1
+verb 3
+EOF
+
+echo "Enabling and starting openvpn-client@${GATEWAY_NAME}..."
+systemctl daemon-reload
+systemctl enable --now openvpn-client@"${GATEWAY_NAME}"
+
+echo ""
+echo "OpenVPN client setup completed successfully for '${GATEWAY_NAME}'!"
+echo "Check status: systemctl status openvpn-client@${GATEWAY_NAME}"
+echo "Check interface: ip addr show tun0"

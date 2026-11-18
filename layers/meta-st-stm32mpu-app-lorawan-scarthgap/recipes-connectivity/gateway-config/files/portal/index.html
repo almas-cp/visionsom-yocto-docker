@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gateway Configuration</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #1a73e8;
+      --primary-hover: #1558b0;
+      --ok-bg: #e6f4ea;
+      --ok-text: #1e7e34;
+      --err-bg: #fce8e6;
+      --err-text: #c5221f;
+      --menu-bg: #ffffff;
+      --menu-hover: #eef4ff;
+      --menu-shadow: 0 10px 24px rgba(0,0,0,0.10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px 16px 40px;
+    }
+
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+
+    .logout-btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .logo-wrap {
+      text-align: center;
+      margin: 8px 0 24px;
+    }
+
+    .logo {
+      display: block;
+      margin: 0 auto;
+      width: 72%;
+      max-width: 260px;
+      height: auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+      text-align: center;
+    }
+
+    .subtitle {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .section-title {
+      margin: 24px 0 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      border-top: 1px solid #e5e7eb;
+      padding-top: 20px;
+    }
+
+    .section-title.first {
+      margin-top: 0;
+      border-top: none;
+      padding-top: 0;
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .combo {
+      position: relative;
+    }
+
+    .combo-input {
+      width: 100%;
+      padding: 11px 44px 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+
+    .combo-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26,115,232,0.12);
+    }
+
+    .combo-toggle {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1;
+      z-index: 2;
+    }
+
+    .combo-toggle:hover {
+      background: #f3f4f6;
+      color: var(--text);
+    }
+
+    .combo-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: var(--menu-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--menu-shadow);
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 50;
+      display: none;
+    }
+
+    .combo.open .combo-menu {
+      display: block;
+    }
+
+    .combo-item {
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      word-break: break-word;
+    }
+
+    .combo-item:hover,
+    .combo-item.active {
+      background: var(--menu-hover);
+    }
+
+    .combo-empty {
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .pw-wrap {
+      position: relative;
+    }
+
+    .pw-wrap .combo-input {
+      padding-right: 108px;
+    }
+
+    .toggle-btn {
+      position: absolute;
+      top: 50%;
+      right: 42px;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: var(--primary);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 6px;
+      z-index: 2;
+    }
+
+    .hint {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .actions {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .save-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      flex: 1 1 240px;
+    }
+
+    .save-btn:hover { background: var(--primary-hover); }
+
+    .save-btn:disabled {
+      background: #9bbcf0;
+      color: #fff;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      display: none;
+      white-space: pre-line;
+    }
+
+    .ok { background: var(--ok-bg); color: var(--ok-text); }
+    .err { background: var(--err-bg); color: var(--err-text); }
+
+    .section-header-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      margin-bottom: 12px;
+    }
+
+    .section-header-toggle .section-title {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+
+    .toggle-switch-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-switch-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    @media (max-width: 640px) {
+      .row { grid-template-columns: 1fr; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="mainFormScreen">
+    <div class="topbar">
+      <button class="logout-btn" type="button" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="card">
+      <div class="logo-wrap">
+        <img src="/sidebarLogo.png" alt="OneSense logo" class="logo">
+      </div>
+
+      <h1>Gateway Configuration</h1>
+      <p class="subtitle">
+        Configure Wi-Fi, cloud, logging, and LoRa region settings for this gateway.
+      </p>
+
+      <div class="section-title first">Network</div>
+
+      <label for="wifi_ssid">Wi-Fi Network (SSID)</label>
+      <div id="wifi_ssid_wrap"></div>
+      <div class="hint">Click the arrow to choose a saved value, or type manually.</div>
+
+      <label for="wifi_password">Wi-Fi Password</label>
+      <div id="wifi_password_wrap"></div>
+      <div class="hint">Leave blank for open (non-secure) networks. Click the arrow to choose a saved value, or type manually.</div>
+
+      <div class="section-header-toggle">
+        <div class="section-title">Wi-Fi HaLow</div>
+        <label class="toggle-switch-label">
+          <input type="checkbox" id="halow_enabled" onchange="toggleHalowFields()">
+          Enable Wi-Fi HaLow
+        </label>
+      </div>
+
+      <div id="halow_fields_container" style="display: none;">
+        <label for="halow_ssid">HaLow Network (SSID)</label>
+        <div id="halow_ssid_wrap"></div>
+        <div class="hint">Click the arrow to choose a saved value, or type manually.</div>
+
+        <label for="halow_password">HaLow Password</label>
+        <div id="halow_password_wrap"></div>
+        <div class="hint">Click the arrow to choose a saved value, or type manually.</div>
+
+        <div class="row">
+          <div>
+            <label for="halow_bandwidth">HaLow Bandwidth</label>
+            <select id="halow_bandwidth">
+              <option value="1">1 MHz</option>
+              <option value="2">2 MHz</option>
+              <option value="4" selected>4 MHz</option>
+              <option value="8">8 MHz</option>
+            </select>
+          </div>
+          <div>
+            <label for="halow_security">HaLow Security</label>
+            <select id="halow_security">
+              <option value="SAE">WPA3 (SAE)</option>
+              <option value="WPA-PSK">WPA2 (PSK)</option>
+              <option value="NONE">Open (None)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <label for="network_server">Network Server</label>
+      <div id="network_server_wrap"></div>
+      <div class="hint">Click the arrow to choose a saved value, or type manually.</div>
+
+      <div class="row">
+        <div>
+          <label for="network_priority">Network Priority</label>
+          <select id="network_priority">
+            <option value="">Select priority</option>
+            <option value="ETHERNET">ETHERNET</option>
+            <option value="WIFI">WIFI</option>
+            <option value="HALOW">HALOW</option>
+            <option value="4G">4G</option>
+            <option value="5G">5G</option>
+            <option value="GSM">GSM (Auto 4G/5G)</option>
+            <option value="AUTO">AUTO</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="region_profile">Region</label>
+          <select id="region_profile">
+            <option value="">Select region</option>
+            <option value="eu868">EU868 (Europe)</option>
+            <option value="in865">IN865 (India)</option>
+            <option value="au915sb1">AU915 SB1 (Australia Sub-band 1)</option>
+            <option value="au915sb2">AU915 SB2 (Australia Sub-band 2 - Standard)</option>
+            <option value="us915sb1">US915 SB1 (US Sub-band 1)</option>
+            <option value="us915sb2">US915 SB2 (US Sub-band 2 - Standard)</option>
+            <option value="as923_1">AS923-1 (Asia/Oceania - Standard)</option>
+            <option value="as923_2">AS923-2 (Asia/Oceania 921.4-922 MHz)</option>
+            <option value="as923_3">AS923-3 (Asia/Oceania 916.6-918 MHz)</option>
+            <option value="as923_4">AS923-4 (Asia/Oceania 917.3-917.5 MHz)</option>
+            <option value="kr920">KR920 (South Korea)</option>
+            <option value="ru864">RU864 (Russia)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title">Gateway</div>
+
+      <label for="zip_password">ZIP Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="zip_password" placeholder="Enter ZIP password">
+        <button type="button" class="toggle-btn" onclick="toggleInput('zip_password', this)">Show</button>
+      </div>
+
+      <label for="log_level">Log Level</label>
+      <select id="log_level">
+        <option value="">Select log level</option>
+        <option value="INFO">INFO</option>
+        <option value="WARN">WARN</option>
+        <option value="ERROR">ERROR</option>
+        <option value="DEBUG">DEBUG</option>
+      </select>
+
+      <div class="section-title">Cloud</div>
+
+      <label for="azure_connection_string">Azure IoT Hub Connection String</label>
+      <div id="azure_connection_string_wrap"></div>
+      <div class="hint">Click the arrow to choose a saved value, or type manually.</div>
+
+      <label for="ttn_api_key">TTN API Key</label>
+      <div id="ttn_api_key_wrap"></div>
+      <div class="hint">Click the arrow to choose a saved value, or type manually.</div>
+
+      <div class="actions">
+        <button id="saveBtn" class="save-btn" type="button" onclick="saveConfig()">Save &amp; Reboot</button>
+      </div>
+
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+  <div class="wrap" id="rebootScreen" style="display:none;">
+    <div class="card">
+      <div class="logo-wrap">
+        <img src="/sidebarLogo.png" alt="OneSense logo" class="logo">
+      </div>
+      <h1>Configuration Saved</h1>
+      <p class="subtitle">
+        Gateway is rebooting.<br>
+        This page may stop responding — that is normal.
+      </p>
+    </div>
+  </div>
+
+  <div class="wrap" id="thankYouScreen" style="display:none;">
+    <div class="card">
+      <div class="logo-wrap">
+        <img src="/sidebarLogo.png" alt="OneSense logo" class="logo">
+      </div>
+      <h1>Thank You</h1>
+      <p class="subtitle">
+        Configuration is done.<br>
+        Gateway is ready to use.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const comboStore = {};
+
+    function showStatus(msg, ok) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'status ' + (ok ? 'ok' : 'err');
+      el.style.display = 'block';
+    }
+
+    function toggleInput(id, btn) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === 'password') {
+        el.type = 'text';
+        btn.textContent = 'Hide';
+      } else {
+        el.type = 'password';
+        btn.textContent = 'Show';
+      }
+    }
+
+    function normalizeLogLevel(value) {
+      const v = String(value || '').toUpperCase();
+      if (v === 'ERR') return 'ERROR';
+      return v;
+    }
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function uniqValues(values) {
+      const seen = new Set();
+      const out = [];
+      (values || []).forEach(v => {
+        const s = String(v || '').trim();
+        if (!s || seen.has(s)) return;
+        seen.add(s);
+        out.push(s);
+      });
+      return out;
+    }
+
+    function createComboField(opts) {
+      const wrap = document.getElementById(opts.wrapId);
+      const isPassword = !!opts.password;
+      const suggestions = uniqValues(opts.suggestions || []);
+      const inputType = isPassword ? 'password' : 'text';
+
+      wrap.innerHTML = `
+        <div class="combo ${isPassword ? 'pw-wrap' : ''}" id="${opts.id}_combo">
+          <input
+            type="${inputType}"
+            id="${opts.id}"
+            class="combo-input"
+            placeholder="${escapeHtml(opts.placeholder || '')}"
+            autocomplete="off"
+          >
+          ${isPassword ? `<button type="button" class="toggle-btn" id="${opts.id}_show">Show</button>` : ``}
+          <button type="button" class="combo-toggle" id="${opts.id}_toggle" aria-label="Show options">▼</button>
+          <div class="combo-menu" id="${opts.id}_menu"></div>
+        </div>
+      `;
+
+      comboStore[opts.id] = {
+        all: suggestions,
+        filtered: suggestions.slice(),
+        activeIndex: -1
+      };
+
+      const combo = document.getElementById(opts.id + '_combo');
+      const input = document.getElementById(opts.id);
+      const menu = document.getElementById(opts.id + '_menu');
+      const toggle = document.getElementById(opts.id + '_toggle');
+      const showBtn = isPassword ? document.getElementById(opts.id + '_show') : null;
+
+      function renderMenu(items) {
+        comboStore[opts.id].filtered = items.slice();
+        comboStore[opts.id].activeIndex = -1;
+
+        if (!items.length) {
+          menu.innerHTML = `<div class="combo-empty">No saved values</div>`;
+          return;
+        }
+
+        menu.innerHTML = items.map((item, idx) => {
+          const label = isPassword ? 'Saved value ' + (idx + 1) : item;
+          return `<div class="combo-item" data-value="${escapeHtml(item)}">${escapeHtml(label)}</div>`;
+        }).join('');
+
+        menu.querySelectorAll('.combo-item').forEach(el => {
+          el.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            input.value = this.getAttribute('data-value') || '';
+            closeMenu();
+          });
+        });
+      }
+
+      function openMenu() {
+        const items = comboStore[opts.id].all || [];
+        renderMenu(items);
+        combo.classList.add('open');
+      }
+
+      function closeMenu() {
+        combo.classList.remove('open');
+      }
+
+      function moveActive(dir) {
+        const items = Array.from(menu.querySelectorAll('.combo-item'));
+        if (!items.length) return;
+
+        let idx = comboStore[opts.id].activeIndex;
+        idx += dir;
+        if (idx < 0) idx = items.length - 1;
+        if (idx >= items.length) idx = 0;
+        comboStore[opts.id].activeIndex = idx;
+
+        items.forEach((el, i) => el.classList.toggle('active', i === idx));
+      }
+
+      input.addEventListener('keydown', function(e) {
+        if (!combo.classList.contains('open') && e.key === 'ArrowDown') {
+          openMenu();
+          e.preventDefault();
+          return;
+        }
+
+        if (e.key === 'ArrowDown') {
+          moveActive(1);
+          e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+          moveActive(-1);
+          e.preventDefault();
+        } else if (e.key === 'Enter') {
+          const items = Array.from(menu.querySelectorAll('.combo-item'));
+          const idx = comboStore[opts.id].activeIndex;
+          if (combo.classList.contains('open') && idx >= 0 && items[idx]) {
+            input.value = items[idx].getAttribute('data-value') || '';
+            closeMenu();
+            e.preventDefault();
+          }
+        } else if (e.key === 'Escape') {
+          closeMenu();
+        }
+      });
+
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (combo.classList.contains('open')) {
+          closeMenu();
+        } else {
+          input.focus();
+          openMenu();
+        }
+      });
+
+      if (showBtn) {
+        showBtn.addEventListener('click', function() {
+          toggleInput(opts.id, showBtn);
+        });
+      }
+
+      document.addEventListener('click', function(e) {
+        if (!combo.contains(e.target)) closeMenu();
+      });
+    }
+
+    function setComboSuggestions(id, values) {
+      const uniq = uniqValues(values);
+      if (!comboStore[id]) return;
+      comboStore[id].all = uniq;
+    }
+
+    function validate(payload) {
+      if (!payload.network_server) return 'Please enter a network server.';
+      if (!payload.network_priority) return 'Please select a network priority.';
+      if (!payload.zip_password) return 'Please enter ZIP password.';
+      if (!payload.log_level) return 'Please select a log level.';
+      if (!payload.azure_connection_string) return 'Please enter Azure connection string.';
+      if (!payload.ttn_api_key) return 'Please enter TTN API key.';
+      if (!payload.region_profile) return 'Please select a region.';
+      return '';
+    }
+
+    function toggleHalowFields() {
+      const enabled = document.getElementById('halow_enabled').checked;
+      document.getElementById('halow_fields_container').style.display = enabled ? 'block' : 'none';
+    }
+
+    function getPayload() {
+      const halowEnabled = document.getElementById('halow_enabled').checked;
+      return {
+        wifi_ssid: document.getElementById('wifi_ssid').value.trim(),
+        wifi_password: document.getElementById('wifi_password').value,
+        halow_enabled: halowEnabled,
+        halow_ssid: halowEnabled ? document.getElementById('halow_ssid').value.trim() : '',
+        halow_password: halowEnabled ? document.getElementById('halow_password').value : '',
+        halow_bandwidth: document.getElementById('halow_bandwidth').value,
+        halow_security: document.getElementById('halow_security').value,
+        network_server: document.getElementById('network_server').value.trim(),
+        network_priority: document.getElementById('network_priority').value,
+        zip_password: document.getElementById('zip_password').value,
+        log_level: normalizeLogLevel(document.getElementById('log_level').value),
+        azure_connection_string: document.getElementById('azure_connection_string').value.trim(),
+        ttn_api_key: document.getElementById('ttn_api_key').value.trim(),
+        region_profile: document.getElementById('region_profile').value
+      };
+    }
+
+    function showRebootFlow() {
+      document.getElementById('mainFormScreen').style.display = 'none';
+      document.getElementById('rebootScreen').style.display = 'block';
+      document.getElementById('thankYouScreen').style.display = 'none';
+
+      setTimeout(() => {
+        document.getElementById('rebootScreen').style.display = 'none';
+        document.getElementById('thankYouScreen').style.display = 'block';
+      }, 5000);
+    }
+
+    function loadSuggestions() {
+      fetch('/config')
+        .then(async r => {
+          if (r.status === 401) {
+            window.location.href = '/login.html';
+            return null;
+          }
+          if (r.status === 403) {
+            window.location.href = '/change_password.html';
+            return null;
+          }
+          if (!r.ok) throw new Error('Failed to load saved configuration.');
+          return r.json();
+        })
+        .then(d => {
+          if (!d || !d.ok) return;
+
+          const c = d.config || {};
+
+          if (c.halow_ssid || c.halow_enabled) {
+            document.getElementById('halow_enabled').checked = true;
+            toggleHalowFields();
+          }
+
+          setComboSuggestions('wifi_ssid', c.wifi_ssid ? [c.wifi_ssid] : []);
+          setComboSuggestions('wifi_password', c.wifi_password ? [c.wifi_password] : []);
+          setComboSuggestions('halow_ssid', c.halow_ssid ? [c.halow_ssid] : []);
+          setComboSuggestions('halow_password', c.halow_password ? [c.halow_password] : []);
+          setComboSuggestions('network_server', c.network_server ? [c.network_server] : []);
+          setComboSuggestions('azure_connection_string', c.azure_connection_string ? [c.azure_connection_string] : []);
+          setComboSuggestions('ttn_api_key', c.ttn_api_key ? [c.ttn_api_key] : []);
+
+          if (c.network_priority) {
+            document.getElementById('network_priority').value = c.network_priority;
+          }
+          if (c.region_profile) {
+            document.getElementById('region_profile').value = c.region_profile;
+          }
+          if (c.log_level) {
+            document.getElementById('log_level').value = c.log_level;
+          }
+          if (c.zip_password) {
+            document.getElementById('zip_password').value = c.zip_password;
+          }
+          if (c.halow_bandwidth) {
+            document.getElementById('halow_bandwidth').value = c.halow_bandwidth;
+          }
+          if (c.halow_security) {
+            document.getElementById('halow_security').value = c.halow_security;
+          }
+        })
+        .catch(err => {
+          console.error('loadSuggestions failed:', err);
+        });
+    }
+
+    function saveConfig() {
+      const payload = getPayload();
+      const error = validate(payload);
+      const btn = document.getElementById('saveBtn');
+
+      if (error) {
+        showStatus(error, false);
+        return;
+      }
+
+      const summary =
+        'Please review your configuration:\n\n' +
+        'Wi-Fi SSID: ' + (payload.wifi_ssid || '(blank)') + '\n' +
+        'HaLow SSID: ' + (payload.halow_ssid || '(blank)') + '\n' +
+        'Network Server: ' + payload.network_server + '\n' +
+        'Network Priority: ' + payload.network_priority + '\n' +
+        'Log Level: ' + payload.log_level + '\n' +
+        'Region: ' + payload.region_profile + '\n\n' +
+        'Save and reboot now?';
+
+      if (!confirm(summary)) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      fetch('/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(async r => {
+        if (r.status === 401) {
+          window.location.href = '/login.html';
+          return null;
+        }
+        if (r.status === 403) {
+          window.location.href = '/change_password.html';
+          return null;
+        }
+        if (!r.ok) throw new Error('Save failed.');
+        return r.json();
+      })
+      .then(d => {
+        if (!d) return;
+
+        if (!d.ok) {
+          showStatus(d.message || 'Save failed.', false);
+          btn.disabled = false;
+          btn.textContent = 'Save & Reboot';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Rebooting...';
+        showRebootFlow();
+      })
+      .catch(() => {
+        btn.disabled = true;
+        btn.textContent = 'Rebooting...';
+        showRebootFlow();
+      });
+    }
+
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .finally(() => {
+          window.location.href = '/login.html';
+        });
+    }
+
+    createComboField({
+      wrapId: 'wifi_ssid_wrap',
+      id: 'wifi_ssid',
+      placeholder: 'Your Wi-Fi name',
+      suggestions: [],
+      password: false
+    });
+
+    createComboField({
+      wrapId: 'wifi_password_wrap',
+      id: 'wifi_password',
+      placeholder: 'Leave blank for open network',
+      suggestions: [],
+      password: true
+    });
+
+    createComboField({
+      wrapId: 'halow_ssid_wrap',
+      id: 'halow_ssid',
+      placeholder: 'Your HaLow network name',
+      suggestions: [],
+      password: false
+    });
+
+    createComboField({
+      wrapId: 'halow_password_wrap',
+      id: 'halow_password',
+      placeholder: 'Leave blank for open network',
+      suggestions: [],
+      password: true
+    });
+
+    createComboField({
+      wrapId: 'network_server_wrap',
+      id: 'network_server',
+      placeholder: 'e.g. eu1.cloud.thethings.network',
+      suggestions: [],
+      password: false
+    });
+
+    createComboField({
+      wrapId: 'azure_connection_string_wrap',
+      id: 'azure_connection_string',
+      placeholder: 'HostName=...;DeviceId=...;SharedAccessKey=...',
+      suggestions: [],
+      password: false
+    });
+
+    createComboField({
+      wrapId: 'ttn_api_key_wrap',
+      id: 'ttn_api_key',
+      placeholder: 'Enter TTN API key',
+      suggestions: [],
+      password: true
+    });
+
+    loadSuggestions();
+  </script>
+</body>
+</html>

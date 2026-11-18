@@ -1,0 +1,18 @@
+#!/bin/sh
+# /etc/ppp/ip-up.d/add-google-dns
+# PPP ip-up hook — runs every time ppp0 gets an IP address.
+# Appends Google's DNS servers to /etc/resolv.conf so they survive
+# carrier DNS overwrite. Baked into Yocto via gateway-multiwan recipe.
+
+# Only run if ppp0 came up
+[ "$PPP_IFACE" = "ppp0" ] || exit 0
+
+# Check if Google DNS already present (avoid duplicates)
+if ! grep -q "8.8.8.8" /etc/resolv.conf 2>/dev/null; then
+    echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+fi
+if ! grep -q "8.8.4.4" /etc/resolv.conf 2>/dev/null; then
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+fi
+
+echo "add-google-dns: nameservers 8.8.8.8, 8.8.4.4 ensured in resolv.conf"

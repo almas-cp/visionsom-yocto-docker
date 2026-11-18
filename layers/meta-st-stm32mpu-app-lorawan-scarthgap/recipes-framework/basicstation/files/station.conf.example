@@ -1,0 +1,44 @@
+/* station.conf.example
+ * Copy to /etc/basicstation/station.conf and edit before enabling service.
+ * See: https://doc.sm.tc/station/gw_develop/config.html
+ */
+{
+    /* LoRaWAN Network Server connection */
+    "tc_uri":   "wss://your-lns-host:8887",
+    "cups_uri": "https://your-cups-host:443",
+
+    /* Log level: DEBUG | INFO | WARNING | ERROR */
+    "log_level": "INFO",
+
+    /* Clock drift tolerance for STM32MP1 MCU/SX1302 hardware */
+    "station_conf": {
+        "time_sync_drift_max": "250ppm"
+    },
+
+    /* Radio config for SX1302/SX1303 (corecell) on STM32MP1 SPI bus */
+    "radio_init": {
+        "device":    "/dev/spidev4.0",
+        "pps":       false,
+        "clksrc":    0
+    },
+
+    /* EU868 channel plan example — adjust for your region */
+    "SX1302_conf": {
+        "lorawan_public": true,
+        "clksrc": 0,
+        "radio_0": {
+            "enable": true,
+            "type": "SX1250",
+            "freq": 867500000,
+            "rssi_offset": -215.4,
+            "tx_enable": true
+        },
+        "radio_1": {
+            "enable": true,
+            "type": "SX1250",
+            "freq": 868500000,
+            "rssi_offset": -215.4,
+            "tx_enable": false
+        }
+    }
+}

@@ -1,0 +1,13 @@
+[Unit]
+Description=4G SIM7600 PPP connection
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/pon-4g
+ExecStop=/usr/bin/poff 4g
+Restart=on-failure
+RestartSec=20
+
+[Install]
+WantedBy=multi-user.target

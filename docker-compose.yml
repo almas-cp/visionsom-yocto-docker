@@ -1,0 +1,74 @@
+# =============================================================================
+# docker-compose.yml
+# Yocto Scarthgap build environment for VisionSOM-STM32MP1
+# =============================================================================
+# Usage:
+#   First-time init:   docker compose run --rm yocto-build /home/yocto/scripts/init.sh
+#   Build image:       docker compose run --rm yocto-build /home/yocto/scripts/build.sh
+#   Interactive shell: docker compose run --rm yocto-build bash
+# =============================================================================
+
+services:
+  yocto-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Match these to your host user to avoid permission issues on mounted volumes
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+        USERNAME: yocto
+    image: visionsom-yocto-scarthgap:latest
+
+    # Mount the workspace from the host — source, build, and output all live here.
+    # This is what makes the build portable: the image is stateless,
+    # all state is on the host volume.
+    volumes:
+      # Main workspace: repo source tree + build directories
+      - ${YOCTO_WORKSPACE:-./workspace}:/yocto
+
+      # Shared sstate-cache: dramatically speeds up rebuilds across machines.
+      # Point multiple machines at the same NFS/shared path to share the cache.
+      - ${SSTATE_CACHE:-./cache/sstate}:/yocto/sstate-cache
+
+      # Shared downloads: avoid re-fetching tarballs and git repos.
+      - ${DL_DIR:-./cache/downloads}:/yocto/downloads
+
+      # SSH keys — needed for private repo access (optional)
+      - ${HOME}/.ssh:/home/yocto/.ssh:ro
+
+      # Custom DNS override to bypass systemd-resolved NSS conflicts with Yocto uninative shims
+      - ./resolv.conf:/etc/resolv.conf:ro
+
+      # Mount helper scripts so changes on host take effect immediately
+      - ./scripts:/home/yocto/scripts
+
+    environment:
+      # BitBake parallelism — adjust to your machine
+      BB_NUMBER_THREADS: ${BB_NUMBER_THREADS:-$(nproc)}
+      PARALLEL_MAKE: ${PARALLEL_MAKE:--j$(nproc)}
+
+      # Build target machine (override on CLI: MACHINE=mp157a-dsi-rvt-emmc-mx)
+      MACHINE: ${MACHINE:-mp157a-hdmi-lt-emmc-mx}
+
+      # Proxy settings — uncomment if behind a corporate proxy
+      # HTTP_PROXY: ${HTTP_PROXY:-}
+      # HTTPS_PROXY: ${HTTPS_PROXY:-}
+      # NO_PROXY: ${NO_PROXY:-}
+
+    # No network restrictions — BitBake fetcher needs internet access
+    network_mode: host
+
+    # Raise ulimits for large parallel builds
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+    # tty for interactive sessions
+    stdin_open: true
+    tty: true
+
+    # Use custom seccomp profile to block openat2 so GNU tar falls back to openat (supported by Yocto pseudo)
+    security_opt:
+      - seccomp=./seccomp-profile.json

@@ -1,0 +1,13 @@
+[Unit]
+Description=WiFi connection
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/wan-failover/start-wifi.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

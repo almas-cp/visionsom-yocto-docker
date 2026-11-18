@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gateway Login</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f6f7fb;
+      color: #1f2937;
+      padding: 24px 16px;
+    }
+    .wrap {
+      max-width: 420px;
+      margin: 40px auto;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+    .logo-wrap {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      display: block;
+      margin: 0 auto;
+      width: 72%;
+      max-width: 220px;
+      height: auto;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+    }
+    p {
+      margin: 0 0 18px;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    .password-wrap {
+      position: relative;
+    }
+    .password-wrap input {
+      padding-right: 76px;
+    }
+    .toggle-text-btn {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: #1a73e8;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 6px;
+    }
+    button.login-btn {
+      width: 100%;
+      margin-top: 18px;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #1a73e8;
+      color: #fff;
+    }
+    button.login-btn:disabled {
+      background: #9bbcf0;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      display: none;
+      white-space: pre-line;
+    }
+    .ok { background: #e6f4ea; color: #1e7e34; }
+    .err { background: #fce8e6; color: #c5221f; }
+    .hint {
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="logo-wrap">
+        <img src="/sidebarLogo.png" alt="OneSense logo" class="logo">
+      </div>
+
+      <h1>Gateway Login</h1>
+      <p>Sign in to configure this gateway.</p>
+
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" placeholder="Enter username">
+
+      <label for="password">Password</label>
+      <div class="password-wrap">
+        <input type="password" id="password" autocomplete="current-password" placeholder="Enter password">
+        <button type="button" class="toggle-text-btn" onclick="togglePassword('password', this)">Show</button>
+      </div>
+
+      <button id="loginBtn" class="login-btn" type="button" onclick="login()">Login</button>
+      <div id="status" class="status"></div>
+
+      <div class="hint">First-time login uses admin / admin.</div>
+    </div>
+  </div>
+
+  <script>
+    function showStatus(msg, ok) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'status ' + (ok ? 'ok' : 'err');
+      el.style.display = 'block';
+    }
+
+    function togglePassword(id, btn) {
+      const el = document.getElementById(id);
+      if (el.type === 'password') {
+        el.type = 'text';
+        btn.textContent = 'Hide';
+      } else {
+        el.type = 'password';
+        btn.textContent = 'Show';
+      }
+    }
+
+    function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('loginBtn');
+
+      if (!username || !password) {
+        showStatus('Please enter username and password.', false);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+
+      fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      })
+      .then(async r => {
+        const d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.message || 'Login failed.');
+        if (d.must_change_password) {
+          window.location.href = '/change_password.html';
+        } else {
+          window.location.href = '/';
+        }
+      })
+      .catch(e => {
+        showStatus(e.message || 'Login failed.', false);
+        btn.disabled = false;
+        btn.textContent = 'Login';
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Custom board device tree overlay for VisionSOM-STM32MP1 (SLS18)
+ *
+ * Configures the following peripherals for the custom carrier board:
+ *
+ *   Peripheral      | Pins                                   | Interface
+ *   ----------------+----------------------------------------+----------
+ *   GSM/SIM7600 RX  | PG14 (USART6_TX → board GSM_RX)       | USART6
+ *   GSM/SIM7600 TX  | PG9  (USART6_RX → board GSM_TX)       | USART6
+ *   GSM Reset       | PB6  (GPIO, active-low)                | GPIO
+ *   GPS RX          | PD9  (USART3_RX)                       | USART3
+ *   GPS TX          | PD8  (USART3_TX)                       | USART3
+ *   LoRa SPI MOSI   | PA8  (SPI5_MOSI, AF5)                  | SPI5
+ *   LoRa SPI MISO   | PD10 (SPI5_MISO, AF5)                  | SPI5
+ *   LoRa SPI SCK    | PC10 (SPI5_SCK,  AF5)                  | SPI5
+ *   LoRa CS0        | PA11 (GPIO, active-low)                | SPI CS
+ *   LoRa Power EN   | PD12 (GPIO, active-high)               | GPIO
+ *   LoRa MUX        | PB1  (GPIO)                            | GPIO
+ *   LoRa Reset      | PG8  (GPIO, active-low)                | GPIO
+ *   HSM SCL         | PE2  (I2C4_SCL) — already in base DTS  | I2C4
+ *   HSM SDA         | PB7  (I2C4_SDA) — already in base DTS  | I2C4
+ *   LED GSM         | PG12 (GPIO)                            | GPIO
+ *   LED BLE         | PC0  (GPIO)                            | GPIO
+ *   LED HaLow       | PA0  (GPIO)                            | GPIO
+ *   LED LoRa        | PF10 (GPIO)                            | GPIO
+ *   LED WiFi        | PA12 (GPIO) — replaces heartbeat LED   | GPIO
+ *   User Button     | PD11 (GPIO, active-low, pull-up)       | GPIO key
+ *   ADC Channels    | PF11 (ADC1_INP2), PA6 (ADC1_INP3),     | ADC1
+ *                   | PB0 (ADC1_INP9), PC3 (ADC1_INP13),     |
+ *                   | PA3 (ADC1_INP15), PA4 (ADC1_INP18),    |
+ *                   | PA5 (ADC1_INP19)                       |
+ *
+ * NOTES:
+ *   - PA11 was used as TIM1_CH4 (PWM LED) in the base DTS. We disable
+ *     that PWM function here and use PA11 as SPI5 chip-select GPIO instead.
+ *   - I2C4 is already active in the base DTS for the touchscreen on the
+ *     dev board. On the custom board the touch controller is absent; the
+ *     same I2C4 bus is reused for the HSM module and LoRa temp sensor.
+ *   - The WiFi LED (PA12) was labeled "led1 / heartbeat" in the base DTS.
+ *     We rename it to wifi-led and remove the heartbeat trigger.
+ *   - USART6 note: PG14 is USART6_TX on the SoC side.  The modem (SIM7600)
+ *     RX line connects to this pin — hence "GSM_RX" on the carrier board.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/pinctrl/stm32-pinfunc.h>
+
+&pinctrl {
+	/* ── USART6 (GSM / SIM7600) ─────────────────────────────────────── */
+	usart6_pins_custom: usart6-custom-0 {
+		pins1 {
+			/* PG14 = USART6_TX (AF7) → carries data to modem RX */
+			pinmux = <STM32_PINMUX('G', 14, AF7)>;
+			bias-disable;
+			drive-push-pull;
+			slew-rate = <0>;
+		};
+		pins2 {
+			/* PG9 = USART6_RX (AF7) → receives data from modem TX */
+			pinmux = <STM32_PINMUX('G', 9, AF7)>;
+			bias-disable;
+		};
+	};
+
+	usart6_sleep_pins_custom: usart6-sleep-custom-0 {
+		pins {
+			pinmux = <STM32_PINMUX('G', 14, ANALOG)>,
+			         <STM32_PINMUX('G', 9,  ANALOG)>;
+		};
+	};
+
+	/* ── USART3 (GPS) ───────────────────────────────────────────────── */
+	usart3_pins_custom: usart3-custom-0 {
+		pins1 {
+			/* PD8 = USART3_TX (AF7) → GPS RX */
+			pinmux = <STM32_PINMUX('D', 8, AF7)>;
+			bias-disable;
+			drive-push-pull;
+			slew-rate = <0>;
+		};
+		pins2 {
+			/* PD9 = USART3_RX (AF7) → GPS TX */
+			pinmux = <STM32_PINMUX('D', 9, AF7)>;
+			bias-disable;
+		};
+	};
+
+	usart3_sleep_pins_custom: usart3-sleep-custom-0 {
+		pins {
+			pinmux = <STM32_PINMUX('D', 8, ANALOG)>,
+			         <STM32_PINMUX('D', 9, ANALOG)>;
+		};
+	};
+
+	/* ── SPI5 (LoRa Concentrator) ───────────────────────────────────── */
+	spi5_pins_custom: spi5-custom-0 {
+		pins1 {
+			/* PA8  = SPI5_MOSI (AF5) */
+			/* PC10 = SPI5_SCK  (AF5) */
+			pinmux = <STM32_PINMUX('A', 8,  AF5)>,
+			         <STM32_PINMUX('C', 10, AF5)>;
+			bias-disable;
+			drive-push-pull;
+			slew-rate = <1>;
+		};
+		pins2 {
+			/* PD10 = SPI5_MISO (AF5) */
+			pinmux = <STM32_PINMUX('D', 10, AF5)>;
+			bias-disable;
+		};
+	};
+
+	spi5_sleep_pins_custom: spi5-sleep-custom-0 {
+		pins {
+			pinmux = <STM32_PINMUX('A', 8,  ANALOG)>,
+			         <STM32_PINMUX('C', 10, ANALOG)>,
+			         <STM32_PINMUX('D', 10, ANALOG)>;
+		};
+	};
+
+	/* ── ADC1 Custom Pins ────────────────────────────────────────────── */
+	adc1_pins_custom: adc1-custom-0 {
+		pins {
+			pinmux = <STM32_PINMUX('F', 11, ANALOG)>, /* ADC1_INP2  (PF11) */
+			         <STM32_PINMUX('A', 6,  ANALOG)>, /* ADC1_INP3  (PA6)  */
+			         <STM32_PINMUX('B', 0,  ANALOG)>, /* ADC1_INP9  (PB0)  */
+			         <STM32_PINMUX('C', 3,  ANALOG)>, /* ADC1_INP13 (PC3)  */
+			         <STM32_PINMUX('A', 3,  ANALOG)>, /* ADC1_INP15 (PA3)  */
+			         <STM32_PINMUX('A', 4,  ANALOG)>, /* ADC1_INP18 (PA4)  */
+			         <STM32_PINMUX('A', 5,  ANALOG)>; /* ADC1_INP19 (PA5)  */
+		};
+	};
+};
+
+/* ── Disable TIM1 PWM on PA11 (needed as LoRa CS0 GPIO) ─────────────────── */
+&timers1 {
+	/delete-node/ pwm;
+};
+
+/* ── USART6 — GSM Modem (SIM7600) ───────────────────────────────────────── */
+&usart6 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&usart6_pins_custom>;
+	pinctrl-1 = <&usart6_sleep_pins_custom>;
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
+	status = "okay";
+};
+
+/* ── USART3 — GPS Receiver ───────────────────────────────────────────────── */
+&usart3 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&usart3_pins_custom>;
+	pinctrl-1 = <&usart3_sleep_pins_custom>;
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
+	status = "okay";
+};
+
+/* ── SPI5 — LoRa SX1302 Concentrator ────────────────────────────────────── */
+&spi5 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&spi5_pins_custom>;
+	pinctrl-1 = <&spi5_sleep_pins_custom>;
+	cs-gpios = <&gpioa 11 GPIO_ACTIVE_LOW>;  /* PA11 = LORA_CS0 */
+	status = "okay";
+
+	/*
+	 * sx1302 spidev node — exposed as /dev/spidev5.0
+	 * basicstation accesses the concentrator directly via spidev.
+	 */
+	spidev@0 {
+		compatible = "semtech,sx1301";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+	};
+};
+
+/* ── I2C4 — HSM Module + LoRa Concentrator Temperature Sensor ───────────── */
+/*
+ * I2C4 (PE2=SCL, PB7=SDA) is already enabled in the base DTS.
+ * On the custom board the touchscreen (ili2132a@41) is not populated.
+ * We delete it and register placeholder labels for the HSM (address TBD).
+ */
+&i2c4 {
+	/delete-node/ ili2132a_touch;
+
+	/*
+	 * NXP EdgeLock SE050E HSM on I2C address 0x48
+	 */
+	se050: se050@48 {
+		compatible = "nxp,se050";
+		reg = <0x48>;
+		status = "okay";
+	};
+};
+
+/ {
+	/* ── LEDs ─────────────────────────────────────────────────────────── */
+	/*
+	 * Override the base DTS 'led' node to use our custom board LED names.
+	 * PG12 = GSM_LED (was led3 in base)
+	 * PA12 = WIFI_LED (was led1 / heartbeat in base)
+	 * PC0  = BLE_LED  (new)
+	 * PA0  = HALOW_LED (new)
+	 * PF10 = LORA_LED (new)
+	 */
+	led {
+		compatible = "gpio-leds";
+
+		gsm-led {
+			label = "gsm-led";
+			gpios = <&gpiog 12 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		wifi-led {
+			label = "wifi-led";
+			gpios = <&gpioa 12 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+			/* heartbeat trigger from base DTS removed */
+		};
+
+		ble-led {
+			label = "ble-led";
+			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		halow-led {
+			label = "halow-led";
+			gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		lora-led {
+			label = "lora-led";
+			gpios = <&gpiof 10 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
+	/* ── User Button ──────────────────────────────────────────────────── */
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		user-button {
+			label = "User Button";
+			gpios = <&gpiod 11 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			linux,code = <KEY_PROG1>;
+			wakeup-source;
+		};
+	};
+
+	/* ── LoRa Concentrator Control GPIOs ─────────────────────────────── */
+	lora-gpio {
+		compatible = "gpio-of-helper";
+
+		lora-power-en {
+			gpio-name = "lora-power-en";
+			gpio = <&gpiod 12 GPIO_ACTIVE_HIGH>;   /* PD12 = LORA_POWER_EN */
+			output;
+			init-low;
+		};
+
+		lora-reset {
+			gpio-name = "lora-reset";
+			gpio = <&gpiog 8 GPIO_ACTIVE_LOW>;     /* PG8 = LORA_RESET */
+			output;
+			init-high;
+		};
+
+		lora-mux {
+			gpio-name = "lora-mux";
+			gpio = <&gpiob 1 GPIO_ACTIVE_HIGH>;    /* PB1 = LORA_MUX */
+			output;
+			init-low;
+		};
+	};
+
+	/* ── GSM Modem Reset GPIO ─────────────────────────────────────────── */
+	gsm-modem {
+		compatible = "gpio-of-helper";
+
+		gsm-reset {
+			gpio-name = "gsm-reset";
+			gpio = <&gpiob 6 GPIO_ACTIVE_LOW>;     /* PB6 = GSM_RST */
+			output;
+			init-high;  /* keep de-asserted (not in reset) */
+		};
+	};
+};
+
+/* ── Disable Display and Touchscreen Components (No Screen Connected) ───── */
+&dsi {
+	status = "disabled";
+};
+
+&ltdc {
+	status = "disabled";
+};
+
+&panel_backlight {
+	status = "disabled";
+};
+
+/ {
+	/delete-node/ panel@0;
+};
+
+/* ── ADC1 (Analog-to-Digital Converter) ─────────────────────────────────── */
+&adc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&adc1_pins_custom>;
+	vdd-supply = <&vdd>;
+	vdda-supply = <&vdd>;
+	vref-supply = <&vdd>;
+	status = "okay";
+
+	adc1: adc@0 {
+		/* Channels: 2(PF11), 3(PA6), 9(PB0), 13(PC3), 15(PA3), 18(PA4), 19(PA5) */
+		st,adc-channels = <2 3 9 13 15 18 19>;
+		st,min-sample-time-nsecs = <5000>;
+		status = "okay";
+	};
+};
+

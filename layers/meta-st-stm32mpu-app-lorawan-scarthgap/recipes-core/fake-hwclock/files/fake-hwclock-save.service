@@ -1,0 +1,11 @@
+[Unit]
+Description=Save system clock to fake-hwclock data file
+After=time-sync.target
+# Only save if time has been synchronized (don't save garbage clock from 1970)
+ConditionFileIsExecutable=/usr/sbin/fake-hwclock
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/fake-hwclock save
+StandardOutput=journal
+StandardError=journal

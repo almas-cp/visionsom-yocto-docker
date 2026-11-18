@@ -1,0 +1,13 @@
+[Unit]
+Description=HaLow connection on wlu1
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/wan-failover/start-halow.sh
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

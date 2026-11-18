@@ -1,0 +1,23 @@
+[Unit]
+Description=LoRa Basics Station Gateway
+Documentation=https://doc.sm.tc/station
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/etc/basicstation
+ExecStartPre=/usr/share/gateway_conf/reset_lgw.sh start
+ExecStart=/usr/bin/station -h /etc/basicstation
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=basicstation
+
+# Give the station time to bind SPI/USB before failing
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=Enable 512MB Swap File on /usr/local
+RequiresMountsFor=/usr/local
+After=local-fs.target
+Requires=local-fs.target
+Before=docker.service aziot-edged.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/enable_swap.sh
+RemainAfterExit=yes
+TimeoutStartSec=120
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

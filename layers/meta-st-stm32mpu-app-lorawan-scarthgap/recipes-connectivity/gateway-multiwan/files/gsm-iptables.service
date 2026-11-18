@@ -1,0 +1,13 @@
+[Unit]
+Description=TCP MSS clamping for 4G PPP interface
+Documentation=man:iptables(8)
+After=network.target 4g-ppp.service
+Wants=4g-ppp.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/gsm-iptables.sh
+
+[Install]
+WantedBy=multi-user.target

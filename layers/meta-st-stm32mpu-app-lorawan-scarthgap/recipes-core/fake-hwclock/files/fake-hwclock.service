@@ -1,0 +1,22 @@
+[Unit]
+Description=Restore saved system clock from fake-hwclock
+# Must run BEFORE any service that needs a valid clock
+# Specifically: before aziot-edged, before chrony (chrony will then correct it further)
+Before=sysinit.target
+Before=aziot-edged.service
+Before=chronyd.service
+DefaultDependencies=no
+ConditionFileIsExecutable=/usr/sbin/fake-hwclock
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Load the saved time on boot (restore)
+ExecStart=/usr/sbin/fake-hwclock load
+# Save the current time on shutdown/reboot
+ExecStop=/usr/sbin/fake-hwclock save
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=sysinit.target

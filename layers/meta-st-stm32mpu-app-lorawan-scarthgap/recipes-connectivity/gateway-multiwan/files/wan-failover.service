@@ -1,0 +1,13 @@
+[Unit]
+Description=5-Way WAN Failover Monitor (Ethernet > WiFi > 4G > 5G > HaLow)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/etc/wan-failover/failover.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

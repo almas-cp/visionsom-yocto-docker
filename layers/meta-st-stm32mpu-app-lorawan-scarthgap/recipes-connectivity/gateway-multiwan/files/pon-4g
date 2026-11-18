@@ -1,0 +1,164 @@
+#!/bin/sh
+# /usr/bin/pon-4g
+# Dials the SIM7600 4G modem over PPP, power-cycling it first.
+# Accepts optional resolved APN, authentication, and PDP context parameters.
+
+/usr/bin/sim7600_power.sh reset
+
+# Create the volatile lock directory required by global ppp options
+mkdir -p /var/run/pppd/lock
+
+# Switch modem from 115200 to 3200000 before pppd starts
+/usr/bin/gsm_setbaud.sh 3200000
+
+PERSIST_APN_FILE="/etc/gateway/last_working_4g_apn"
+
+# Parse CLI arguments if provided by sim_manager.py
+if [ -n "$1" ]; then
+    APN="$1"
+    AUTH_TYPE="${2:-none}"
+    USERNAME="${3:-""}"
+    PASSWORD="${4:-""}"
+    IP_TYPE="${5:-IP}"
+    echo "Using sim_manager parameters: APN='$APN', AUTH='$AUTH_TYPE', IP_TYPE='$IP_TYPE'"
+else
+    # Fallback to brute-force try loop if no parameters passed
+    BASE_APNS="auto telstra.internet yesinternet live.vodafone.com internet telstra.wap airtelgprs.com jionet www bsnlnet"
+    LAST_APN=""
+    if [ -f "$PERSIST_APN_FILE" ]; then
+        LAST_APN=$(cat "$PERSIST_APN_FILE" | tr -d '\n\r')
+    fi
+
+    APNS=""
+    if [ -n "$LAST_APN" ]; then
+        APNS="$LAST_APN"
+        for A in $BASE_APNS; do
+            if [ "$A" != "$LAST_APN" ]; then
+                APNS="$APNS $A"
+            fi
+        done
+    else
+        APNS="$BASE_APNS"
+    fi
+fi
+
+# Serial device for SIM7600
+TTY_DEV="/dev/ttySTM5"
+
+connect_ppp() {
+    local try_apn="$1"
+    local try_auth="$2"
+    local try_user="$3"
+    local try_pass="$4"
+    local try_iptype="$5"
+
+    local cgdcont_val
+    if [ "$try_apn" = "auto" ]; then
+        cgdcont_val='AT+CGDCONT=1,"'$try_iptype'"'
+    else
+        cgdcont_val='AT+CGDCONT=1,"'$try_iptype'","'$try_apn'"'
+    fi
+
+    # Write dynamic chat script
+    cat > /tmp/chat-4g << CHATEOF
+ABORT 'BUSY'
+ABORT 'NO CARRIER'
+ABORT 'ERROR'
+ABORT 'NO DIALTONE'
+'' 'AT'
+'OK' 'AT+IFC=0,0'
+'OK' '$cgdcont_val'
+'OK' 'ATD*99#'
+'CONNECT' ''
+CHATEOF
+
+    # Configure authentication secrets if needed
+    if [ "$try_auth" = "pap" ] || [ "$try_auth" = "chap" ]; then
+        if [ -n "$try_user" ]; then
+            # Write to secrets files
+            echo "\"$try_user\" * \"$try_pass\"" > /etc/ppp/pap-secrets
+            echo "\"$try_user\" * \"$try_pass\"" > /etc/ppp/chap-secrets
+            chmod 600 /etc/ppp/pap-secrets /etc/ppp/chap-secrets
+        fi
+    fi
+
+    # Write dynamic peer file (IPv4 only with MTU/MRU clamps)
+    cat > /etc/ppp/peers/4g << PEEREOF
+$TTY_DEV
+3200000 nocrtscts
+noipdefault
+usepeerdns
+defaultroute
+persist
+noauth
+mtu 1420
+mru 1420
+connect "/usr/sbin/chat -v -f /tmp/chat-4g"
+PEEREOF
+
+    if [ "$try_auth" = "pap" ] || [ "$try_auth" = "chap" ]; then
+        if [ -n "$try_user" ]; then
+            echo "user \"$try_user\"" >> /etc/ppp/peers/4g
+        fi
+    fi
+
+    echo "Launching PPP connection for APN '$try_apn'..."
+    
+    # Terminate any existing pppd daemon first
+    poff 4g >/dev/null 2>&1 || true
+    sleep 1
+    
+    # Start pppd
+    pppd call 4g
+    
+    # Wait up to 25 seconds for ppp0 to get an IP address
+    connected=0
+    for i in $(seq 1 25); do
+        IP=$(ip -4 addr show ppp0 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1)
+        if [ -n "$IP" ]; then
+            echo "Successfully connected to 4G PPP using APN: $try_apn (IP: $IP)"
+            connected=1
+            break
+        fi
+        sleep 1
+    done
+
+    if [ "$connected" -eq 1 ]; then
+        # Save working APN to eMMC persistent config directory
+        mkdir -p /etc/gateway
+        echo "$try_apn" > "$PERSIST_APN_FILE"
+        
+        # Delete default route from ppp0 so wan-failover daemon can manage it
+        ip route del default dev ppp0 2>/dev/null || true
+        return 0
+    else
+        return 1
+    fi
+}
+
+if [ -n "$APN" ]; then
+    # Run with sim_manager settings
+    if connect_ppp "$APN" "$AUTH_TYPE" "$USERNAME" "$PASSWORD" "$IP_TYPE"; then
+        exit 0
+    else
+        echo "ERROR: Dynamic APN connection failed. Falling back to default list..."
+        # If dynamic fails, try default try loop as fallback
+        APN=""
+    fi
+fi
+
+# Run brute-force loop if no APN is set or if dynamic query failed
+if [ -z "$APN" ]; then
+    for A in $APNS; do
+        if connect_ppp "$A" "none" "" "" "IP"; then
+            exit 0
+        else
+            echo "Failed to connect using APN: $A"
+            poff 4g >/dev/null 2>&1 || true
+            sleep 2
+        fi
+    done
+fi
+
+echo "ERROR: All 4G APNs failed to connect." >&2
+exit 1

@@ -1,0 +1,11 @@
+[Unit]
+Description=Save system clock hourly to fake-hwclock data file
+
+[Timer]
+# Save the clock every hour so we never lose more than 1 hour on power loss
+OnBootSec=5min
+OnUnitActiveSec=1h
+Unit=fake-hwclock-save.service
+
+[Install]
+WantedBy=timers.target

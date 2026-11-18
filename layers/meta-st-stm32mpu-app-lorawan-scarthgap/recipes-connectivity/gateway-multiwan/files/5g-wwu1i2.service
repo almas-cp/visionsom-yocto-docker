@@ -1,0 +1,13 @@
+[Unit]
+Description=5G Telit connection
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/etc/wan-failover/start-5g.sh
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

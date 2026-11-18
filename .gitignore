@@ -1,0 +1,40 @@
+# =============================================================================
+# .gitignore — VisionSOM Yocto Docker build environment
+# =============================================================================
+
+# ── Yocto build outputs & caches (huge, generated) ──────────────────────────
+workspace/
+cache/
+
+# ── Environment overrides (may contain local paths / secrets) ────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Docker local overrides ───────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── OS junk ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Editors & IDEs ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+\#*\#
+.project
+.settings/
+
+# ── Python bytecode ──────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+
+# ── Logs & temp files ────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.orig

@@ -1,0 +1,92 @@
+#!/bin/sh
+# /usr/bin/store_to_hsm
+# Wrapper script to store and manage keys in NXP SE050E HSM on I2C4
+#
+# Usage:
+#   store_to_hsm --set <name_or_id> <value_or_->
+#   store_to_hsm --get <name_or_id>
+#   store_to_hsm --raw <name_or_id>
+#   store_to_hsm --del <name_or_id>
+#   store_to_hsm --list
+#   store_to_hsm --clear
+#   store_to_hsm --stdin [i2c_dev]
+#   or legacy:
+#   store_to_hsm [i2c_bus] <wifi_pw> <azure_cs> <ttn_key> <halow_pw> [zip_pw]
+
+DEV="/dev/i2c-0"
+
+# Wait up to 5s if I2C bus is initializing during early boot
+ensure_dev() {
+    for i in 1 2 3 4 5; do
+        [ -e "$DEV" ] && return 0
+        sleep 1
+    done
+    return 0
+}
+
+case "$1" in
+    --set)
+        if [ -z "$2" ] || [ -z "$3" ]; then
+            echo "Usage: store_to_hsm --set <name_or_id> <value_or_->" >&2
+            exit 1
+        fi
+        ensure_dev
+        exec /usr/bin/store-gateway-secrets "$DEV" --set "$2" "$3"
+        ;;
+    --del|--delete)
+        if [ -z "$2" ]; then
+            echo "Usage: store_to_hsm --del <name_or_id>" >&2
+            exit 1
+        fi
+        ensure_dev
+        exec /usr/bin/store-gateway-secrets "$DEV" --del "$2"
+        ;;
+    --get)
+        if [ -z "$2" ]; then
+            echo "Usage: store_to_hsm --get <name_or_id>" >&2
+            exit 1
+        fi
+        ensure_dev
+        exec /usr/bin/read-gateway-secrets "$DEV" --get "$2"
+        ;;
+    --raw)
+        if [ -z "$2" ]; then
+            echo "Usage: store_to_hsm --raw <name_or_id>" >&2
+            exit 1
+        fi
+        ensure_dev
+        exec /usr/bin/read-gateway-secrets "$DEV" --raw "$2"
+        ;;
+    --list)
+        ensure_dev
+        exec /usr/bin/read-gateway-secrets "$DEV" --list
+        ;;
+    --clear)
+        ensure_dev
+        exec /usr/bin/store-gateway-secrets "$DEV" --clear
+        ;;
+    --stdin)
+        DEV="${2:-/dev/i2c-0}"
+        ensure_dev
+        exec /usr/bin/store-gateway-secrets "$DEV" --stdin
+        ;;
+esac
+
+# Legacy positional arguments
+if [ "$#" -ge 4 ]; then
+    DEV="/dev/i2c-0"
+    if [ "$#" -eq 5 ] && [ -e "$1" ]; then
+        DEV="$1"; shift
+    fi
+    ensure_dev
+    exec /usr/bin/store-gateway-secrets "$DEV" "$@"
+fi
+
+echo "Usage: store_to_hsm --set <name_or_id> <value_or_->" >&2
+echo "       store_to_hsm --get <name_or_id>" >&2
+echo "       store_to_hsm --raw <name_or_id>" >&2
+echo "       store_to_hsm --del <name_or_id>" >&2
+echo "       store_to_hsm --list" >&2
+echo "       store_to_hsm --clear" >&2
+echo "       store_to_hsm --stdin [i2c_dev]" >&2
+exit 1

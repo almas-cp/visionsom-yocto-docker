@@ -1,0 +1,9 @@
+# Don't send bulky runtime data to the Docker build context
+.git
+workspace/
+cache/
+*.md
+.env
+.env.*
+.gitignore
+.dockerignore

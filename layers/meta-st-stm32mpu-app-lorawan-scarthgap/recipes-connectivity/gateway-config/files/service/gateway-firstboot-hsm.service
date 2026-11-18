@@ -1,0 +1,17 @@
+[Unit]
+Description=Clear SE050E HSM on First Firmware Boot
+ConditionPathExists=/etc/gateway/.first_boot_hsm_wipe
+After=local-fs.target
+Before=gateway-config.service button-check.service multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/store_to_hsm --clear
+ExecStartPost=/bin/rm -f /etc/gateway/.first_boot_hsm_wipe
+StandardOutput=journal+console
+StandardError=journal+console
+RemainAfterExit=yes
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

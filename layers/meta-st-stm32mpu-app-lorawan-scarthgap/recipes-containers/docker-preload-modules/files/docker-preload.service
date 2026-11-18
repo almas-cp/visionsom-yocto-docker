@@ -1,0 +1,15 @@
+[Unit]
+Description=Preload Docker Images on First Boot
+After=docker.service
+Before=aziot-edged.service
+ConditionPathExists=/opt/preloaded-modules
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/preload-docker-images.sh
+StandardOutput=journal
+StandardError=journal
+# Since Type=oneshot, it will block aziot-edged from starting until this finishes
+
+[Install]
+WantedBy=multi-user.target

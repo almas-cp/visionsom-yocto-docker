@@ -1,0 +1,14 @@
+[Unit]
+Description=Gateway Configuration Boot Service
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/apply_gateway_config.sh
+RemainAfterExit=yes
+TimeoutStartSec=300
+Environment="NO_RESTART=1"
+
+[Install]
+WantedBy=multi-user.target
